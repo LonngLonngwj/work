@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResearchMate — AI Multi-Agent Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ========== CSS Custom Properties ========== */
+    :root {
+      --bg: #07090e;
+      --surface: #0f1219;
+      --surface-raised: #161b26;
+      --border: #1e2535;
+      --accent: #00e5a0;
+      --accent-dim: #00e5a022;
+      --accent-glow: #00e5a044;
+      --warn: #ff6b6b;
+      --info: #5b8def;
+      --text-primary: #e8eaf0;
+      --text-secondary: #7a8299;
+      --text-muted: #4a5068;
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+      --radius: 12px;
+      --radius-lg: 20px;
+    }
+
+    /* ========== Reset & Base ========== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+    }
+
+    body {
+      font-family: var(--font-mono);
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 20%, #00e5a008 0%, transparent 50%),
+        radial-gradient(ellipse 60% 80% at 85% 70%, #5b8def06 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ========== Layout ========== */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ========== Nav ========== */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px) saturate(1.4);
+      background: #07090ecc;
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); text-decoration: none; }
+
+    /* ========== Hero ========== */
+    .hero {
+      padding: 10rem 0 4rem;
+      position: relative;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border: 1px solid var(--accent-dim);
+      border-radius: 100px;
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 2rem;
+      background: var(--accent-dim);
+    }
+    .hero-tag::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--accent), #5b8def);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-desc {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 480px;
+      margin-bottom: 2.5rem;
+    }
+    .hero-visual {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .agent-orbit {
+      width: 380px;
+      height: 380px;
+      position: relative;
+    }
+    .orbit-ring {
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      animation: spin 30s linear infinite;
+    }
+    .orbit-ring:nth-child(2) {
+      inset: 40px;
+      animation-duration: 25s;
+      animation-direction: reverse;
+      border-style: dashed;
+    }
+    .orbit-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      background: var(--accent-dim);
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      box-shadow: 0 0 40px var(--accent-glow);
+    }
+    .orbit-node {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      cursor: default;
+    }
+    .orbit-node:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .orbit-node:nth-child(3) { top: 0; left: 50%; transform: translateX(-50%); }
+    .orbit-node:nth-child(4) { top: 50%; right: 0; transform: translateY(-50%); }
+    .orbit-node:nth-child(5) { bottom: 0; left: 50%; transform: translateX(-50%); }
+    .orbit-node:nth-child(6) { top: 50%; left: 0; transform: translateY(-50%); }
+
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* ========== Stats Strip ========== */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin: 0 0 6rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      padding: 2rem;
+      text-align: center;
+    }
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.03em;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0.4rem;
+    }
+
+    /* ========== Pipeline Section ========== */
+    .section-header {
+      margin-bottom: 3rem;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-top: 0.8rem;
+      max-width: 600px;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      margin-bottom: 6rem;
+      position: relative;
+    }
+    .pipeline::before {
+      content: '';
+      position: absolute;
+      top: 42px;
+      left: 12.5%;
+      right: 12.5%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), #5b8def, #a855f7, #ff6b6b);
+      opacity: 0.3;
+      z-index: 0;
+    }
+    .pipeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 0 1rem;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      animation: fadeUp 0.6s ease forwards;
+    }
+    .pipeline-step:nth-child(1) { animation-delay: 0.1s; }
+    .pipeline-step:nth-child(2) { animation-delay: 0.25s; }
+    .pipeline-step:nth-child(3) { animation-delay: 0.4s; }
+    .pipeline-step:nth-child(4) { animation-delay: 0.55s; }
+
+    .step-icon {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 1.2rem;
+      border: 2px solid;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .pipeline-step:hover .step-icon {
+      transform: scale(1.1);
+    }
+    .step-icon.planner  { background: #00e5a010; border-color: #00e5a044; color: #00e5a0; }
+    .step-icon.searcher { background: #5b8def10; border-color: #5b8def44; color: #5b8def; }
+    .step-icon.summarizer { background: #a855f710; border-color: #a855f744; color: #a855f7; }
+    .step-icon.writer   { background: #ff6b6b10; border-color: #ff6b6b44; color: #ff6b6b; }
+
+    .pipeline-step:hover .step-icon.planner  { box-shadow: 0 0 30px #00e5a033; }
+    .pipeline-step:hover .step-icon.searcher { box-shadow: 0 0 30px #5b8def33; }
+    .pipeline-step:hover .step-icon.summarizer { box-shadow: 0 0 30px #a855f733; }
+    .pipeline-step:hover .step-icon.writer   { box-shadow: 0 0 30px #ff6b6b33; }
+
+    .step-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.3rem;
+    }
+    .step-role {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.6rem;
+    }
+    .step-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      max-width: 200px;
+    }
+
+    /* ========== Demo Section ========== */
+    .demo-section { margin-bottom: 6rem; }
+    .demo-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .demo-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-raised);
+    }
+    .demo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .demo-dot:nth-child(1) { background: #ff5f57; }
+    .demo-dot:nth-child(2) { background: #ffbd2e; }
+    .demo-dot:nth-child(3) { background: #28c840; }
+    .demo-toolbar-title {
+      margin-left: 0.8rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .demo-body { padding: 2rem; }
+
+    .demo-input-row {
+      display: flex;
+      gap: 0.8rem;
+      margin-bottom: 2rem;
+    }
+    .demo-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.9rem 1.2rem;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .demo-input::placeholder { color: var(--text-muted); }
+    .demo-input:focus { border-color: var(--accent); }
+    .demo-btn {
+      padding: 0.9rem 2rem;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.85rem;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: letter-spacing 0.3s, box-shadow 0.3s;
+      white-space: nowrap;
+    }
+    .demo-btn:hover {
+      letter-spacing: 0.12em;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+    .demo-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* ========== Log Feed ========== */
+    .log-feed {
+      max-height: 400px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .log-entry {
+      padding: 0.8rem 1rem;
+      border-left: 3px solid transparent;
+      margin-bottom: 0.3rem;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      opacity: 0;
+      animation: logSlide 0.3s ease forwards;
+    }
+    @keyframes logSlide {
+      from { opacity: 0; transform: translateX(-12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .log-entry.agent-planner    { border-color: #00e5a0; background: #00e5a006; }
+    .log-entry.agent-searcher   { border-color: #5b8def; background: #5b8def06; }
+    .log-entry.agent-summarizer { border-color: #a855f7; background: #a855f706; }
+    .log-entry.agent-writer     { border-color: #ff6b6b; background: #ff6b6b06; }
+    .log-entry.system           { border-color: var(--text-muted); background: #ffffff04; }
+    .log-entry.success          { border-color: var(--accent); background: #00e5a00a; }
+    .log-entry .log-agent {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-right: 0.5rem;
+    }
+    .log-entry .log-agent.planner    { color: #00e5a0; }
+    .log-entry .log-agent.searcher   { color: #5b8def; }
+    .log-entry .log-agent.summarizer { color: #a855f7; }
+    .log-entry .log-agent.writer     { color: #ff6b6b; }
+    .log-entry .log-agent.system     { color: var(--text-muted); }
+    .log-entry .log-agent.success    { color: var(--accent); }
+    .log-entry .log-time {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      margin-left: auto;
+      float: right;
+    }
+    .log-typing {
+      display: inline-block;
+      width: 6px;
+      height: 14px;
+      background: var(--accent);
+      animation: blink 0.8s infinite;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ========== Report Preview ========== */
+    .report-preview {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      max-height: 300px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      display: none;
+    }
+    .report-preview.visible { display: block; }
+    .report-preview h2 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      margin: 1.2rem 0 0.5rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .report-preview h2:first-child { margin-top: 0; }
+    .report-preview ul {
+      padding-left: 1.2rem;
+      margin: 0.4rem 0;
+    }
+    .report-preview li { margin-bottom: 0.3rem; }
+    .report-preview .highlight-text { color: var(--accent); font-weight: 500; }
+
+    /* ========== Features Grid ========== */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 6rem;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      transition: border-color 0.3s, transform 0.3s;
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+    }
+    .feature-card:nth-child(1) { animation-delay: 0.1s; }
+    .feature-card:nth-child(2) { animation-delay: 0.2s; }
+    .feature-card:nth-child(3) { animation-delay: 0.3s; }
+    .feature-card:nth-child(4) { animation-delay: 0.4s; }
+    .feature-card:nth-child(5) { animation-delay: 0.5s; }
+    .feature-card:nth-child(6) { animation-delay: 0.6s; }
+    .feature-card:hover {
+      border-color: var(--accent-dim);
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+    }
+    .feature-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+    }
+    .feature-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ========== Footer ========== */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 0;
+      text-align: center;
+    }
+    .footer-text {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+    .footer-text span { color: var(--accent); }
+
+    /* ========== Animations ========== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========== Responsive ========== */
+    @media (max-width: 900px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+      .hero-visual { order: -1; }
+      .agent-orbit { width: 280px; height: 280px; }
+      .orbit-node { width: 44px; height: 44px; font-size: 1.1rem; }
+      .orbit-center { width: 60px; height: 60px; font-size: 0.6rem; }
+      .stats-strip { grid-template-columns: repeat(2, 1fr); }
+      .pipeline { grid-template-columns: 1fr; gap: 2rem; }
+      .pipeline::before { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .demo-input-row { flex-direction: column; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====== Navigation ====== -->
+  <nav>
+    <div class="container">
+      <div class="nav-logo">Research<span>Mate</span></div>
+      <ul class="nav-links">
+        <li><a href="#pipeline">Pipeline</a></li>
+        <li><a href="#demo">Demo</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="https://github.com" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ====== Hero ====== -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="hero-tag">Multi-Agent System</div>
+        <h1>
+          Give it a question.<br>
+          <span class="highlight">Get a research report.</span>
+        </h1>
+        <p class="hero-desc">
+          ResearchMate orchestrates 4 specialized AI agents — Planner, Searcher, Summarizer, and Writer — to decompose, research, analyze, and document any topic autonomously.
+        </p>
+        <a href="#demo" class="demo-btn" style="display:inline-block; text-decoration:none;">Try the Demo &darr;</a>
+      </div>
+      <div class="hero-visual">
+        <div class="agent-orbit">
+          <div class="orbit-ring"></div>
+          <div class="orbit-ring"></div>
+          <div class="orbit-center">CORE</div>
+          <div class="orbit-node" title="Planner">📋</div>
+          <div class="orbit-node" title="Searcher">🔍</div>
+          <div class="orbit-node" title="Summarizer">📝</div>
+          <div class="orbit-node" title="Writer">📄</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Stats Strip ====== -->
+  <div class="container">
+    <div class="stats-strip">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-agents">4</div>
+        <div class="stat-label">Specialized Agents</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-steps">∞</div>
+        <div class="stat-label">Reasoning Steps</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-parallel">3-5</div>
+        <div class="stat-label">Parallel Searches</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-output">1</div>
+        <div class="stat-label">Final Report</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Pipeline ====== -->
+  <section id="pipeline" class="container">
+    <div class="section-header">
+      <div class="section-label">How it works</div>
+      <div class="section-title">4-Agent Orchestration Pipeline</div>
+      <p class="section-desc">
+        Each agent is a specialist. A central orchestrator feeds their outputs into the next stage, forming a long-chain reasoning pipeline.
+      </p>
+    </div>
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="step-icon planner">📋</div>
+        <div class="step-name">Planner</div>
+        <div class="step-role">Problem Decomposition</div>
+        <div class="step-desc">Breaks your complex question into 3-5 targeted subtopics for deep investigation.</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-icon searcher">🔍</div>
+        <div class="step-name">Searcher</div>
+        <div class="step-role">Parallel Web Research</div>
+        <div class="step-desc">Executes parallel web searches across all subtopics, gathering raw evidence and sources.</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-icon summarizer">📝</div>
+        <div class="step-name">Summarizer</div>
+        <div class="step-role">Structured Analysis</div>
+        <div class="step-desc">Extracts key findings, data points, and insights from raw search results.</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-icon writer">📄</div>
+        <div class="step-name">Writer</div>
+        <div class="step-role">Report Generation</div>
+        <div class="step-desc">Synthesizes all analyses into a coherent, professional research report.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Interactive Demo ====== -->
+  <section id="demo" class="container demo-section">
+    <div class="section-header">
+      <div class="section-label">Interactive Demo</div>
+      <div class="section-title">Watch Agents Think in Real-Time</div>
+      <p class="section-desc">
+        Enter a research question below and observe the multi-agent pipeline process it step by step.
+      </p>
+    </div>
+    <div class="demo-panel">
+      <div class="demo-toolbar">
+        <div class="demo-dot"></div>
+        <div class="demo-dot"></div>
+        <div class="demo-dot"></div>
+        <span class="demo-toolbar-title">ResearchMate Agent Terminal</span>
+      </div>
+      <div class="demo-body">
+        <div class="demo-input-row">
+          <input type="text" class="demo-input" id="queryInput" placeholder="e.g. What are the latest trends in autonomous AI agents?" />
+          <button class="demo-btn" id="runBtn" onclick="runDemo()">Run Agents</button>
+        </div>
+        <div class="log-feed" id="logFeed"></div>
+        <div class="report-preview" id="reportPreview"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Features ====== -->
+  <section id="features" class="container">
+    <div class="section-header">
+      <div class="section-label">Capabilities</div>
+      <div class="section-title">Built for Real Research Work</div>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🧩</div>
+        <div class="feature-title">Long-Chain Reasoning</div>
+        <div class="feature-desc">Multi-step planning that decomposes complex problems into tractable sub-problems before execution begins.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Parallel Execution</div>
+        <div class="feature-desc">Subtopic searches run concurrently, cutting total research time dramatically compared to sequential approaches.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-title">Fault Tolerance</div>
+        <div class="feature-desc">Each agent has retry logic and graceful degradation. If one search fails, the pipeline continues with available data.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔌</div>
+        <div class="feature-title">Pluggable Architecture</div>
+        <div class="feature-desc">Swap any agent or tool independently. Works with OpenAI, DeepSeek, Qwen, or any OpenAI-compatible endpoint.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Structured Output</div>
+        <div class="feature-desc">Reports include key findings, data points, source citations, confidence ratings, and identified information gaps.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <div class="feature-title">Live Web Access</div>
+        <div class="feature-desc">Agents search the real web in real-time — no static knowledge cutoff. Results are fresh and current.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Footer ====== -->
+  <footer>
+    <div class="container">
+      <p class="footer-text">
+        <span>ResearchMate</span> &mdash; Multi-Agent Research System &mdash; MIT License &mdash; Built with passion for autonomous AI
+      </p>
+    </div>
+  </footer>
+
+  <!-- ====== JavaScript ====== -->
+  <script>
+    // ——— Simulated Agent Pipeline ———
+    const LOG_TEMPLATES = {
+      planner: [
+        "Analyzing research question and identifying key dimensions...",
+        "Decomposing into 3 subtopics:",
+        '  [1] {q} — Overview & Background',
+        '  [2] {q} — Latest Developments',
+        '  [3] {q} — Challenges & Outlook',
+        "Planner Agent completed. Passing 3 subtopics to Searcher."
+      ],
+      searcher: [
+        "Initiating parallel web search for 3 subtopics...",
+        "  [Subtopic 1] Searching: \"{q} overview background\" — 5 results found",
+        "  [Subtopic 2] Searching: \"{q} latest 2024\" — 5 results found",
+        "  [Subtopic 3] Searching: \"{q} challenges future\" — 4 results found",
+        "Searcher Agent completed. 14 raw results collected."
+      ],
+      summarizer: [
+        "Processing raw results for Subtopic 1: extracting key facts...",
+        "Processing raw results for Subtopic 2: identifying data points...",
+        "Processing raw results for Subtopic 3: analyzing challenges...",
+        "Generating structured summaries with source attribution...",
+        "Summarizer Agent completed. 3 structured summaries ready."
+      ],
+      writer: [
+        "Receiving 3 structured summaries from Summarizer Agent...",
+        "Composing research report with logical transitions...",
+        "Adding executive summary and conclusion sections...",
+        "Formatting with citations and confidence ratings...",
+        "Writer Agent completed. Final report generated."
+      ]
+    };
+
+    function getTimestamp() {
+      const now = new Date();
+      return now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function addLog(agent, message) {
+      const feed = document.getElementById('logFeed');
+      const entry = document.createElement('div');
+      entry.className = `log-entry agent-${agent}`;
+      entry.innerHTML = `<span class="log-time">${getTimestamp()}</span><span class="log-agent ${agent}">${agent}</span> ${message}`;
+      feed.appendChild(entry);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function showReport(question) {
+      const preview = document.getElementById('reportPreview');
+      preview.classList.add('visible');
+      preview.innerHTML = `
+        <h2>Research Report: ${question}</h2>
+        <p><em>Generated by ResearchMate Multi-Agent System</em></p>
+        <h2>1. Overview & Background</h2>
+        <ul>
+          <li>This is a <span class="highlight-text">simulated demo</span> showcasing the multi-agent pipeline architecture.</li>
+          <li>In production, this section contains real web-sourced information processed by the Summarizer Agent.</li>
+          <li>The Planner Agent identified this as a foundational subtopic for comprehensive understanding.</li>
+        </ul>
+        <h2>2. Latest Developments</h2>
+        <ul>
+          <li>The Searcher Agent queried multiple sources in parallel to gather current information.</li>
+          <li>Key trends and data points would be extracted and attributed to their sources here.</li>
+          <li>Confidence level: <span class="highlight-text">High</span> (based on multiple corroborating sources).</li>
+        </ul>
+        <h2>3. Challenges & Outlook</h2>
+        <ul>
+          <li>The Summarizer Agent identified several open challenges in this domain.</li>
+          <li>Future directions and emerging opportunities are summarized from recent publications.</li>
+        </ul>
+        <h2>Conclusion</h2>
+        <p>This report was autonomously generated by 4 specialized agents working in sequence: <strong>Planner → Searcher → Summarizer → Writer</strong>. In a production environment, all content would be sourced from real-time web searches.</p>
+      `;
+    }
+
+    async function runDemo() {
+      const input = document.getElementById('queryInput');
+      const btn = document.getElementById('runBtn');
+      const query = input.value.trim() || 'What are the latest trends in autonomous AI agents?';
+
+      // Reset
+      btn.disabled = true;
+      btn.textContent = 'Running...';
+      document.getElementById('logFeed').innerHTML = '';
+      document.getElementById('reportPreview').classList.remove('visible');
+      document.getElementById('reportPreview').innerHTML = '';
+
+      addLog('system', `Research question received: "${query}"`);
+      await sleep(600);
+
+      // Stage 1: Planner
+      addLog('system', 'Orchestrator: dispatching to <strong>Planner Agent</strong>...');
+      await sleep(400);
+      for (const tpl of LOG_TEMPLATES.planner) {
+        addLog('planner', tpl.replace(/{q}/g, query.slice(0, 40)));
+        await sleep(700 + Math.random() * 500);
+      }
+
+      // Stage 2: Searcher
+      addLog('system', 'Orchestrator: dispatching to <strong>Searcher Agent</strong>...');
+      await sleep(400);
+      for (const tpl of LOG_TEMPLATES.searcher) {
+        addLog('searcher', tpl.replace(/{q}/g, query.slice(0, 30)));
+        await sleep(600 + Math.random() * 600);
+      }
+
+      // Stage 3: Summarizer
+      addLog('system', 'Orchestrator: dispatching to <strong>Summarizer Agent</strong>...');
+      await sleep(400);
+      for (const tpl of LOG_TEMPLATES.summarizer) {
+        addLog('summarizer', tpl);
+        await sleep(800 + Math.random() * 400);
+      }
+
+      // Stage 4: Writer
+      addLog('system', 'Orchestrator: dispatching to <strong>Writer Agent</strong>...');
+      await sleep(400);
+      for (const tpl of LOG_TEMPLATES.writer) {
+        addLog('writer', tpl);
+        await sleep(700 + Math.random() * 500);
+      }
+
+      // Done
+      await sleep(500);
+      addLog('success', `Pipeline complete. Report generated successfully.`);
+
+      showReport(query);
+
+      btn.disabled = false;
+      btn.textContent = 'Run Agents';
+    }
+
+    // ——— Intersection Observer for scroll animations ———
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animationPlayState = 'running';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.pipeline-step, .feature-card').forEach(el => {
+      el.style.animationPlayState = 'paused';
+      observer.observe(el);
+    });
+
+    // Enter key
+    document.getElementById('queryInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') runDemo();
+    });
+  </script>
+
+</body>
+</html>
